@@ -21,3 +21,15 @@ x <- POST(visa_url,
           config(sslkey = key_file,
                  sslcert = cert_file),
           verbose())
+
+
+
+  x <- GET("https://www.mastercard.us/settlement/currencyrate/settlement-currencies",
+           add_headers("User-Agent" = "Mozilla/5.0"))
+  x <- content(x)
+
+  currency <- as.data.frame(t(sapply(x$data$currencies, function(x) {c(CODE = x$alphaCd, DESC = trimws(x$currNam))})))
+
+
+  x <- GET("https://www.mastercard.us/settlement/currencyrate/fxDate=2016-11-14;transCurr=CAD;crdhldBillCurr=USD;bankFee=0;transAmt=1/conversion-rate",
+           add_headers("User-Agent" = "Mozilla/5.0"))
