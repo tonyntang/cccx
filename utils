@@ -1,0 +1,78 @@
+getPassword <- function(msg = "Please enter your password!")
+{
+  library(shiny)
+  library(miniUI)
+  
+  ui <- miniPage(
+    gadgetTitleBar(msg),
+    miniContentPanel(
+      passwordInput("password", "")
+    )
+  )
+  
+  server <- function(input, output) {
+    observeEvent(input$done, {
+      stopApp(input$password)
+    })
+    observeEvent(input$cancel, {
+      stopApp(stop("No password.", call. = FALSE))
+    })
+  }
+  
+  runGadget(ui, server)
+}
+
+
+# To help build SQL query
+# e.g. 
+# date1 <- ymd('2015-01-01')
+# date2 <- '2016-10-12'
+# mk_sql("select * from abc where date1 < ?date1 and date2 > ?date2", date1, date2)
+subsql <- function(x, ...)
+{
+  
+  library(stringr, quietly = TRUE, warn.conflicts = FALSE)
+  library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+  
+  var_list <- list(...)
+  var_names <- names(var_list)
+  to_keep <- str_count(var_names) > 0
+  
+  var_names <- var_names[to_keep]
+  var_list  <- var_list[to_keep]
+  
+  var_list <- lapply(var_list, as.character)
+  
+  # var_names_1 <- all.names(substitute(list(...)))[-1L]
+  
+  n <- length(var_list)
+  if(n <= 0) return(x)
+  
+  for(i in 1:n)
+  {
+    x <- str_replace_all(x, paste0("(DATE)?'?\\&", var_names[i], "\\.?'?"), paste0("DATE'", var_list[[i]], "'"))
+  }
+  x
+}
+
+# Read SQL statement from a SQL file into R
+read_sql <- function(file)
+{
+  readChar(file, file.info(file)$size)
+}
+
+# For a tibble or a data frame
+# change character column encoding from 'UTF-8' to 'latin1'
+enc2latin1 <- function(data)
+{
+  char_cols <- data %>% select_if(is.character) %>% colnames
+  col2enc   <- char_cols[sapply(char_cols, 
+                                function(x) {
+                                  dim(data[which(stringi::stri_enc_mark(data[[x]]) == 'UTF-8'), ])[1] > 0
+                                })]
+  for(idx in col2enc)
+  {
+    Encoding(data[[idx]]) <- 'latin1'
+  }
+  data
+}
